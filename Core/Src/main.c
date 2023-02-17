@@ -22,8 +22,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "led.h"
-#include "adc.h"
+#include "ms.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
