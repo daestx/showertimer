@@ -15,8 +15,6 @@
 #define LED_B 0x03
 
 
-extern struct LED_config;
-
 void led_init();
 void led_clear();
 void led_display_simple(uint8_t led);
