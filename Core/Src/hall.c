@@ -7,16 +7,38 @@
 
 #include "hall.h"
 #include "meas.h"
+#include "timer.h"
 
 #define HALL_BOUNDRAY 150
 
 static uint32_t   hall_real;
 static uint8_t    hall_status;
 static uint32_t   hall_count;
+static uint8_t    hall_status_10s;
+
+static TIMER_TIM hall_tim;
+static uint32_t count;
 
 
 void hall_init(){
 
+
+}
+
+void hall_updateStatus(uint8_t status){
+
+
+   hall_status = status;
+   // within 10s HALL_EXPCOUNT_10S shall be visible
+   // Within 1s period 1130 times this function was call
+   // so let's assume ADC values are available every 1ms
+   timer_init(&hall_tim, TIMER_PERIOD_1S);
+   count++;
+   if(timer_isElapsed(&hall_tim) == TIMER_ELAPSED){
+      // todo find a mechanism how to calculate the status
+      // for the last 10s
+
+   }
 
 }
 
@@ -38,8 +60,8 @@ void hall_checkBoundary(){
    // if The magnetic pole (north or sout) is applied facing the branded side of the package
    // output signal will switch to low. Zero magnetic pole equals to high
 
-   if (hall_real < HALL_BOUNDRAY) hall_status = HALL_POLE_TRUE;
-   else hall_status = HALL_POLE_FALSE;
+   if (hall_real < HALL_BOUNDRAY) hall_updateStatus(HALL_POLE_TRUE);
+   else hall_updateStatus(HALL_POLE_FALSE);
 
 }
 
@@ -53,6 +75,11 @@ uint8_t hall_getHallStatus(){
    return hall_status;
 
 }
+
+uint8_t hall_getHallStatus_10S(){
+   return hall_status_10s;
+}
+
 
 void hall_updateHallCount(uint8_t status){
 
