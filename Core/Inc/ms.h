@@ -15,9 +15,12 @@
 #define  MS_SHOWER_OFF     0x00
 #define  MS_SHOWER_START   0x01
 #define  MS_SHOWER_PHASE1  0x10
-#define  MS_SHOWER_PHASE2  0x11
-#define  MS_SHOWER_PHASE3  0x12
-#define  MS_SHOWER_PHASE4  0x13
+#define  MS_SHOWER_PHASE1E 0x11
+#define  MS_SHOWER_PHASE2  0x12
+#define  MS_SHOWER_PHASE2E 0x13
+#define  MS_SHOWER_PHASE3  0x14
+#define  MS_SHOWER_PHASE3E 0x15
+#define  MS_SHOWER_PHASE4  0x16
 #define  MS_SHOWER_END     0xA0
 #define  MS_TESTMODE       0xF0
 
