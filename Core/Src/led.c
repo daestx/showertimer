@@ -38,7 +38,7 @@ void led_display_simple(uint8_t led){
 	if(led == LED_R)HAL_GPIO_WritePin(GPIOA, LED_R_Pin, GPIO_PIN_SET);
 	else if(led == LED_G)HAL_GPIO_WritePin(GPIOA, LED_G_Pin, GPIO_PIN_SET);
 	else if(led == LED_B)HAL_GPIO_WritePin(GPIOA, LED_B_Pin, GPIO_PIN_SET);
-	else; // do nothing
+	else; // do nothing -> Equals LED_OFF
 
 }
 
