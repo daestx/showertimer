@@ -19,6 +19,7 @@
 
 
 // define some time periods
+#define TIMER_LED_BLINK       100
 #define TIMER_PERIOD_1S       1000
 #define TIMER_PERIOD_10S      10000
 #define TIMER_PERIOD_30S      30000
@@ -28,6 +29,7 @@
 #define TIMER_PERIOD_4MIN     240000
 #define TIMER_PERIOD_5MIN     300000
 #define TIMER_PERIOD_6MIN     360000
+#define TIMER_INFINITY        0XFFFFFFFF
 
 
 
