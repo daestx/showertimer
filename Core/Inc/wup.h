@@ -10,11 +10,7 @@
 
 #include "stm32l0xx_hal.h"
 
-
-
-void wup_activate();
-void wup_suspend();
+void wup_clearIsrFlags();
 void wup_sleep();
-
 
 #endif
