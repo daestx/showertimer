@@ -40,6 +40,8 @@ void hall_updateStatus(uint8_t status){
 
    }
 
+   hall_updateHallCount(hall_status);
+
 }
 
 
@@ -90,7 +92,12 @@ void hall_updateHallCount(uint8_t status){
    // increment hall counter with every rising or falling edge
    // one full turn of the propeller will increase Hall counter by 4
    // if all signal edges were recognized
-   if (status != last_state)  hall_count++;
+   if (status != last_state){
+
+      hall_count++;
+      last_state = status;
+   }
+
 
 }
 uint32_t hall_getHallCount(){
