@@ -19,8 +19,14 @@
 #include "timer.h"
 #include "meas.h"
 
-static uint8_t ms_state;
-static uint8_t ms_mode;
+static struct{
+   uint8_t ms_state;
+   uint8_t ms_last_state;
+   uint8_t ms_mode;
+   uint8_t ms_last_mode;
+}ms_states;
+
+
 static TIMER_TIM ms_tim_1;  // timer 1
 static TIMER_TIM ms_tim_2;  // timer 2
 
@@ -28,15 +34,15 @@ static TIMER_TIM ms_tim_2;  // timer 2
 #define MS_BLINK_ON  1
 
 uint8_t ms_ledTimer(uint32_t duration, uint8_t led, uint8_t blink){
-   static uint8_t last_mode;
-   static uint8_t last_state;
+   static uint8_t last_mode;  // nothing to do with ms_states
+   static uint8_t last_state; // used locally only to recognize state changes
    static uint8_t toggle;  // status of a blinking LED
 
    // with every mode or state change, timer shall be reset
-   if(last_mode != ms_mode || last_state !=  ms_state){
+   if(last_mode != ms_states.ms_mode || last_state !=  ms_states.ms_state){
 
-      last_mode = ms_mode;
-      last_state =  ms_state;
+      last_mode = ms_states.ms_mode;
+      last_state =  ms_states.ms_state;
       // reset timers
       timer_reset(&ms_tim_1);
       timer_reset(&ms_tim_2);
@@ -55,6 +61,10 @@ uint8_t ms_ledTimer(uint32_t duration, uint8_t led, uint8_t blink){
 
          if(toggle == 1)led_display_simple(led);
          else led_clear();
+
+         // invert toggle state
+         toggle ^= 0x01;
+
          // reset ms_tim_2
          timer_reset(&ms_tim_2);
          timer_init(&ms_tim_2, TIMER_LED_BLINK);
@@ -63,7 +73,7 @@ uint8_t ms_ledTimer(uint32_t duration, uint8_t led, uint8_t blink){
 
    }
 
-   return timer_isElapsed(&ms_tim_1);
+   return (timer_isElapsed(&ms_tim_1));
 }
 
 
@@ -102,11 +112,16 @@ void ms_start(){
    // set the mode to MS_SHOWER_OFF
    ms_set_mode(MS_SHOWER_OFF);
 
+   // test the shutdown
+   ms_set_mode(MS_SHOWER_PHASE1);
+   ms_set_mode(MS_SHOWER_PHASE1E);
+   ms_set_state(MS_SHUTDOWN);
+
 }
 
 void ms_operational(){
-   static uint8_t index;
-   static TIMER_TIM ms_test_tim;  // for testmode only
+   //static uint8_t index;
+   //static TIMER_TIM ms_test_tim;  // for testmode only
    uint8_t rc;
 
 
@@ -115,14 +130,11 @@ void ms_operational(){
    hall_cyclic();
    meas_start();
 
-   ms_set_mode(MS_TESTMODE);
-
-   switch (ms_mode){
+   switch (ms_states.ms_mode){
 
       case MS_SHOWER_OFF:     // wake up event recognized.
                               // check for 10 second, if there are multiple HALL signals recognized
-                              if(TIMER_ELAPSED == ms_ledTimer(TIMER_PERIOD_10S, LED_OFF, MS_BLINK_OFF)){
-
+                              if(TIMER_RUN == ms_ledTimer(TIMER_PERIOD_10S, LED_OFF, MS_BLINK_OFF)) return;
                               // check wether hall count is higher then 20 (5 turns of the propeller
                               if (hall_getHallCount() < HALL_EXPCOUNT_10S){
                                  // seems like only a glitch was detected that woke up the system
@@ -158,10 +170,10 @@ void ms_operational(){
                               // ... water is still running
                               ms_set_mode(MS_SHOWER_PHASE1);
                               break;
-
       case MS_SHOWER_PHASE1:  // First 4:50 min green LED
                               if(TIMER_RUN == ms_ledTimer(TIMER_PERIOD_5MIN - TIMER_PERIOD_10S , LED_G, MS_BLINK_OFF)) return;
                               // check whether water is still flowing
+
                               if(HALL_POLE_FALSE == hall_getHallStatus_10S()){
                                  // seems like shower tap was closed
                                  ms_set_state(MS_SHUTDOWN);
@@ -171,7 +183,7 @@ void ms_operational(){
                               ms_set_mode(MS_SHOWER_PHASE1E);
                               break;
 
-      case MS_SHOWER_PHASE1E: // First 5 min green LED
+      case MS_SHOWER_PHASE1E: // 10 s blinking green LED
                               if(TIMER_RUN == ms_ledTimer(TIMER_PERIOD_10S , LED_G, MS_BLINK_ON)) return;
                               // check whether water is still flowing
                               if(HALL_POLE_FALSE == hall_getHallStatus_10S()){
@@ -183,18 +195,52 @@ void ms_operational(){
                               ms_set_mode(MS_SHOWER_PHASE2);
 
 
-      case MS_SHOWER_PHASE2:  // Next 2 min blue LED
-                              led_display_simple(LED_B);
-                              ms_set_mode(MS_SHOWER_PHASE3);
+      case MS_SHOWER_PHASE2:  // Next 1:50 min blue LED
+                              if(TIMER_RUN == ms_ledTimer(TIMER_PERIOD_2MIN - TIMER_PERIOD_10S , LED_B, MS_BLINK_OFF)) return;
+                              // check whether water is still flowing
+                              if(HALL_POLE_FALSE == hall_getHallStatus_10S()){
+                                 // seems like shower tap was closed
+                                 ms_set_state(MS_SHUTDOWN);
+                                 break;
+                              }
+
+                              ms_set_mode(MS_SHOWER_PHASE2E);
                               break;
 
+      case MS_SHOWER_PHASE2E: // 10 s blinking blue LED
+                              if(TIMER_RUN == ms_ledTimer(TIMER_PERIOD_10S , LED_B, MS_BLINK_ON)) return;
+                              // check whether water is still flowing
+                              if(HALL_POLE_FALSE == hall_getHallStatus_10S()){
+                                 // seems like shower tap was closed
+                                 ms_set_state(MS_SHUTDOWN);
+                                 break;
+                              }
+
+                              ms_set_mode(MS_SHOWER_PHASE3);
+
       case MS_SHOWER_PHASE3:  // Next 3 min red LED
-                              led_display_simple(LED_R);
+                              if(TIMER_RUN == ms_ledTimer(TIMER_PERIOD_3MIN , LED_R, MS_BLINK_OFF)) return;
+                              // check whether water is still flowing
+                              if(HALL_POLE_FALSE == hall_getHallStatus_10S()){
+                                 // seems like shower tap was closed
+                                 ms_set_state(MS_SHUTDOWN);
+                                 break;
+                              }
+
                               ms_set_mode(MS_SHOWER_PHASE4);
                               break;
 
+
       case MS_SHOWER_PHASE4:  // IF shower takes longer then 10 minutes red LED starts blinking
-                              ms_set_mode(MS_TESTMODE);
+                              if(TIMER_RUN == ms_ledTimer(TIMER_PERIOD_30S, LED_R, MS_BLINK_ON)) return;
+                              // check whether water is still flowing
+                              if(HALL_POLE_FALSE == hall_getHallStatus_10S()){
+                                 // seems like shower tap was closed
+                                 ms_set_state(MS_SHUTDOWN);
+                                 break;
+                              }
+                              // keep the same mode but reset timer. Every 30 seconds
+                              timer_reset(&ms_tim_1);
                               break;
 
 
@@ -204,17 +250,36 @@ void ms_operational(){
       case MS_TESTMODE:       // test mode
                               break;
 
-      case MS_SHOWER_END:     ms_set_state(MS_SHUTDOWN);
-                              break;
    }
-
 }
 
 void ms_shutdown(){
-   // wait for another 5 Minutes if shower is switched on
-   // again before entering sleep mode
+   static uint8_t count;
+   // in case last state is not OPERATIONAL switch directly to sleep
+   if(ms_states.ms_last_state == MS_OPERATIONAL){
+      // wait for another 3 Minutes if shower is switched on
+      // again before entering sleep mode
+      // check every 30 seconds if there is again some activity
+      if(TIMER_RUN == ms_ledTimer(TIMER_PERIOD_30S, LED_OFF, MS_BLINK_OFF)) return;
+      if(HALL_POLE_TRUE == hall_getHallStatus_10S()){
+         // seems like shower tap opened again
+         ms_set_state(MS_OPERATIONAL);
+         if(ms_states.ms_mode < MS_SHOWER_PHASE4){
+            // switch again to operational but to the next mode from which
+            // we were originally coming
+            ms_set_state(ms_states.ms_mode + 1);
+         }
+         // only if red LED was already blinking (MS_SHOWER_PHASE4)
+         // switch to this state again
+         ms_set_state(MS_SHOWER_PHASE4);
+      }
+      // else wait for max 6 rounds
+      count ++;
+      if(6 < count) ms_set_state(MS_SLEEP);
+   }
 
-
+   // reset counter for the next run
+   count = 0;
    // prepare everything for sleep
    ms_set_state(MS_SLEEP);
    // clear all leds
@@ -231,7 +296,7 @@ void ms_sleep(){
 
 void ms_handle_states(void){
 
-   switch (ms_state) {
+   switch (ms_states.ms_state) {
       case MS_INIT:        ms_init();
                            break;
       case MS_START:       ms_start();
@@ -247,18 +312,20 @@ void ms_handle_states(void){
 }
 
 uint8_t ms_get_state(){
-   return ms_state;
+   return ms_states.ms_state;
 }
 
-uint8_t ms_set_state(uint8_t state){
-   ms_state = state;
+void ms_set_state(uint8_t state){
 
-   return 0;
+   ms_states.ms_last_state = ms_states.ms_state;
+   ms_states.ms_state = state;
+
 }
 
-uint8_t ms_set_mode(uint8_t mode){
-   ms_mode = mode;
+void ms_set_mode(uint8_t mode){
 
-   return 0;
+   ms_states.ms_last_mode = ms_states.ms_mode;
+   ms_states.ms_mode = mode;
+
 }
 
