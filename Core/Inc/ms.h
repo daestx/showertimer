@@ -21,7 +21,6 @@
 #define  MS_SHOWER_PHASE3  0x14
 #define  MS_SHOWER_PHASE3E 0x15
 #define  MS_SHOWER_PHASE4  0x16
-#define  MS_SHOWER_END     0xA0
 #define  MS_TESTMODE       0xF0
 
 // states
@@ -34,8 +33,8 @@
 void ms_handle_states(void);
 void ms_init();
 uint8_t ms_get_state();
-uint8_t ms_set_state(uint8_t state);
-uint8_t ms_set_mode(uint8_t state);
+void ms_set_state(uint8_t state);
+void ms_set_mode(uint8_t mode);
 
 
 #endif
