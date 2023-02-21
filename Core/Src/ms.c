@@ -95,27 +95,16 @@ void ms_init(){
 
 void ms_start(){
 
-   // setup timer
-   timer_init(&ms_tim_1, 100);
-   // green LED shall be switched on during this time
-   led_display_simple(LED_G);
-   // as long as the timer is not elapse, state will not be switched
-   if(timer_isElapsed(&ms_tim_1) == TIMER_RUN) return;
+   if(TIMER_RUN == ms_ledTimer(100, LED_G, MS_BLINK_OFF)) return;
 
    // clear all LEDs
    led_clear();
-   // release timer, so that it can be reused.
-   timer_reset(&ms_tim_1);
+
 
    // switch state to MS_OPERATIONAL
    ms_set_state(MS_OPERATIONAL);
    // set the mode to MS_SHOWER_OFF
    ms_set_mode(MS_SHOWER_OFF);
-
-   // test the shutdown
-   ms_set_mode(MS_SHOWER_PHASE1);
-   ms_set_mode(MS_SHOWER_PHASE1E);
-   ms_set_state(MS_SHUTDOWN);
 
 }
 
