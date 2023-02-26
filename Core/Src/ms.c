@@ -81,16 +81,31 @@ void ms_init(){
    // this state will only be entered for the very first time
    // after connecting power to the board
 
+   static uint8_t index = 1;
+
+
    // initialize all peripherals
    MX_GPIO_Init();
    MX_DMA_Init();
    MX_ADC_Init();
 
-   led_clear();
+   // Test all leds in wait mode
+   while (index <= 3){
+      led_display_simple(index);
+      timer_init(&ms_tim_1, TIMER_PERIOD_1S/2);
+      if(TIMER_ELAPSED == timer_isElapsed(&ms_tim_1)){
+         timer_reset(&ms_tim_1);
+         index++;
+      }
+   }
 
+   led_clear();
    ms_set_state(MS_START);
    // enter directly stop mode.
    wup_sleep();
+
+
+
 }
 
 void ms_start(){
@@ -129,6 +144,8 @@ void ms_operational(){
                                  // seems like only a glitch was detected that woke up the system
                                  // start system shutdown
                                  ms_set_state(MS_SHUTDOWN);
+                                 // set mode to direct shutdown
+                                 ms_set_mode(MS_SHTDWN_DIRECT);
                                  break;
                               }
 
@@ -245,8 +262,8 @@ void ms_operational(){
 void ms_shutdown(){
    static uint8_t count;
    // in case last state is not OPERATIONAL switch directly to sleep
-   if(ms_states.ms_last_state == MS_OPERATIONAL){
-      // wait for another 3 Minutes if shower is switched on
+   if(ms_states.ms_last_state == MS_OPERATIONAL && ms_states.ms_mode != MS_SHTDWN_DIRECT){
+      // wait for some time if shower is switched on
       // again before entering sleep mode
       // check every 30 seconds if there is again some activity
       if(TIMER_RUN == ms_ledTimer(TIMER_PERIOD_30S, LED_OFF, MS_BLINK_OFF)) return;
@@ -262,7 +279,7 @@ void ms_shutdown(){
          // switch to this state again
          ms_set_state(MS_SHOWER_PHASE4);
       }
-      // else wait for max 6 rounds
+      // else wait for max 3 rounds = 1.5 Minutes until switch off
       count ++;
       if(6 < count) ms_set_state(MS_SLEEP);
    }
