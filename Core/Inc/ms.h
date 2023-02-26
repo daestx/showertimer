@@ -23,6 +23,10 @@
 #define  MS_SHOWER_PHASE4  0x16
 #define  MS_TESTMODE       0xF0
 
+// modes in shutdown state
+#define  MS_SHTDWN_DIRECT  0xFA
+
+
 // states
 #define  MS_INIT           0x00
 #define  MS_START          0x01
