@@ -156,8 +156,9 @@ void ms_operational(){
       case MS_SHOWER_START:   // shower start phase. Wait until Water is warm
                               rc = ms_ledTimer(TIMER_PERIOD_1MIN, LED_OFF, MS_BLINK_OFF);
 
-                              // check if temperature reached 30°C
-                              if(30 <= temp_getTemp()){
+                              // check if temperature reached 25°C since it takes a while until the pipe is heated
+                              // up
+                              if(25 <= temp_getTemp()){
                                  // water is already warm, so start phase 1
                                  ms_set_mode(MS_SHOWER_PHASE1);
                                  break;
